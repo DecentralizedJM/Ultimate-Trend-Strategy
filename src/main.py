@@ -249,10 +249,22 @@ class UltimateTrendBot:
 def main():
     """CLI entrypoint."""
     config = Config.load()
-    if not config.validate():
-        sys.exit(1)
 
     setup_logging(config)
+
+    # Fetch symbols from Mudrex if not set via env var or config
+    if not config.symbols:
+        from src.utils.symbols import fetch_mudrex_symbols
+        logger.info("📡 Fetching symbols from Mudrex API...")
+        if config.mudrex_api_secret:
+            config.symbols = fetch_mudrex_symbols(config.mudrex_api_secret)
+        if not config.symbols:
+            logger.error("No symbols available. Set SYMBOLS env var or provide MUDREX_API_SECRET.")
+            sys.exit(1)
+        logger.info(f"📡 Trading {len(config.symbols)} Mudrex symbols")
+
+    if not config.validate():
+        sys.exit(1)
 
     bot = UltimateTrendBot(config)
     asyncio.run(bot.start())

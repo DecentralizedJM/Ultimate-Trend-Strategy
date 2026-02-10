@@ -2,59 +2,14 @@
 # =======================================
 # Copy to config.yaml and edit values as needed.
 # All values can also be overridden via environment variables.
-# Override symbols via SYMBOLS env var: SYMBOLS=BTCUSDT,ETHUSDT
 
-symbols:
-  - BTCUSDT
-  - ETHUSDT
-  - SOLUSDT
-  - XRPUSDT
-  - DOGEUSDT
-  - ADAUSDT
-  - AVAXUSDT
-  - DOTUSDT
-  - LINKUSDT
-  - MATICUSDT
-  - SHIBUSDT
-  - LTCUSDT
-  - BCHUSDT
-  - NEARUSDT
-  - UNIUSDT
-  - APTUSDT
-  - ICPUSDT
-  - FILUSDT
-  - ARBUSDT
-  - OPUSDT
-  - ATOMUSDT
-  - IMXUSDT
-  - GRTUSDT
-  - INJUSDT
-  - FTMUSDT
-  - SUIUSDT
-  - SEIUSDT
-  - TIAUSDT
-  - PEPEUSDT
-  - WIFUSDT
-  - FETUSDT
-  - RNDRUSDT
-  - AAVEUSDT
-  - MKRUSDT
-  - SNXUSDT
-  - CRVUSDT
-  - LDOUSDT
-  - APEUSDT
-  - SANDUSDT
-  - MANAUSDT
-  - DYDXUSDT
-  - STXUSDT
-  - CFXUSDT
-  - AGIXUSDT
-  - RUNEUSDT
-  - GMXUSDT
-  - PENDLEUSDT
-  - ORDIUSDT
-  - WLDUSDT
-  - JUPUSDT
+# Symbols: auto-fetched from Mudrex API at startup if left empty.
+# Override via SYMBOLS env var: SYMBOLS=BTCUSDT,ETHUSDT
+# Or uncomment below to hard-code specific symbols:
+# symbols:
+#   - BTCUSDT
+#   - ETHUSDT
+#   - SOLUSDT
 
 timeframe: 5  # minutes
 

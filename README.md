@@ -41,7 +41,7 @@ MUDREX_API_SECRET=your_secret python -m src.main
 |---|---|---|
 | `MUDREX_API_SECRET` | Mudrex API secret (required for live) | — |
 | `DRY_RUN` | Simulate trades | `false` |
-| `SYMBOLS` | Comma-separated symbols to override | All 554 Bybit USDT perps |
+| `SYMBOLS` | Comma-separated override (default: all Mudrex-listed) | Auto-fetched |
 | `TIMEFRAME` | Candle timeframe (minutes) | `5` |
 | `MARGIN_PERCENT` | % of futures wallet per trade | `2.0` |
 | `DEFAULT_LEVERAGE` | Starting leverage (auto-scales up) | `5` |
