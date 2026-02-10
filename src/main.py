@@ -196,7 +196,9 @@ class UltimateTrendBot:
                     f"Active positions: {len(positions)} ({', '.join(positions) if positions else 'none'}) | "
                     f"Sizing: {stats['sizing_multiplier']}x"
                 )
-                for symbol in self.config.symbols:
+
+                # Log details only for active positions
+                for symbol in positions:
                     values = self.engine.get_indicator_values(symbol)
                     if values.get("price"):
                         logger.info(
