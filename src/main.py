@@ -85,6 +85,7 @@ class UltimateTrendBot:
         # Control
         self._running = False
         self._shutdown_event = asyncio.Event()
+        self._processed_klines = 0  # Liveness counter
 
     async def start(self) -> None:
         """Start the bot."""
@@ -194,7 +195,8 @@ class UltimateTrendBot:
                     f"📊 Status: {stats['total_trades']} trades | "
                     f"Win rate: {stats['win_rate']} | "
                     f"Active positions: {len(positions)} ({', '.join(positions) if positions else 'none'}) | "
-                    f"Sizing: {stats['sizing_multiplier']}x"
+                    f"Sizing: {stats['sizing_multiplier']}x | "
+                    f"Klines processed: {self._processed_klines}"
                 )
 
                 # Log details only for active positions
@@ -238,6 +240,8 @@ class UltimateTrendBot:
         """Callback for confirmed candle close."""
         if not kline.confirm:
             return  # Only process confirmed candles
+
+        self._processed_klines += 1
 
         try:
             # Update strategy engine
