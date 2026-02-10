@@ -1,0 +1,189 @@
+# Ultimate Trend Strategy Configuration
+# =======================================
+# Copy to config.yaml and edit values as needed.
+# All values can also be overridden via environment variables.
+
+symbols:
+  - BTCUSDT
+  - ETHUSDT
+
+timeframe: 5  # minutes
+
+# ============================================================================
+# 📈 Trend Detection
+# ============================================================================
+trend:
+  ema_fast: 9
+  ema_slow: 21
+  ema_filter: 50
+  ema_200: 200
+  adx_period: 14
+  adx_threshold: 25
+  use_ema200_filter: true
+
+# ============================================================================
+# ⚡ Supertrend
+# ============================================================================
+supertrend:
+  enabled: true
+  atr_period: 10
+  multiplier: 3.0
+
+# ============================================================================
+# 📊 Bollinger Bands
+# ============================================================================
+bollinger:
+  enabled: true
+  period: 20
+  std_dev: 2.0
+  min_width_pct: 2.0
+
+# ============================================================================
+# 🔄 Multi-Timeframe
+# ============================================================================
+mtf:
+  enabled: true
+  higher_timeframe: "60"
+  confirmation_type: "EMA"
+
+# ============================================================================
+# 💪 RSI
+# ============================================================================
+rsi:
+  enabled: true
+  period: 14
+  overbought: 70
+  oversold: 30
+  use_divergence: true
+  divergence_lookback: 5
+
+# ============================================================================
+# 📉 MACD
+# ============================================================================
+macd:
+  enabled: true
+  fast_period: 12
+  slow_period: 26
+  signal_period: 9
+
+# ============================================================================
+# 📦 Volume
+# ============================================================================
+volume:
+  enabled: true
+  period: 20
+  multiplier: 1.2
+  detect_spike: true
+  spike_multiplier: 2.0
+
+# ============================================================================
+# 🌊 Market Conditions
+# ============================================================================
+market_conditions:
+  use_choppiness: true
+  chop_period: 14
+  chop_threshold: 61.8
+  use_sideways: true
+  sideways_period: 20
+  sideways_threshold: 1.5
+
+# ============================================================================
+# 💨 Volatility
+# ============================================================================
+volatility:
+  enabled: true
+  min_pct: 0.5
+  max_pct: 5.0
+
+# ============================================================================
+# 🎯 Support/Resistance
+# ============================================================================
+sr:
+  enabled: true
+  lookback: 50
+  tolerance_pct: 0.5
+
+# ============================================================================
+# 🛡️ Risk Management
+# ============================================================================
+risk:
+  atr_period: 14
+  stoploss_atr: 1.5
+  takeprofit_atr: 3.0
+  use_trailing_stop: true
+  trailing_stop_atr: 1.2
+  use_breakeven: true
+  breakeven_trigger_atr: 1.5
+  margin_percent: 5.0
+  min_leverage: 1
+  max_leverage: 20
+  default_leverage: 5
+  min_order_value: 8.0
+
+# ============================================================================
+# 💰 Partial Profit Taking
+# ============================================================================
+profit:
+  use_partial_profits: true
+  tp1_atr: 1.5   # Close 50% at TP1
+  tp2_atr: 2.5   # Close 25% at TP2
+
+# ============================================================================
+# 💵 Position Sizing
+# ============================================================================
+sizing:
+  risk_per_trade_pct: 2.0
+  use_dynamic_sizing: true
+  use_adaptive_sizing: true
+  max_consecutive_losses: 2
+
+# ============================================================================
+# ⏰ Time Filters
+# ============================================================================
+time_filter:
+  use_date_filter: false
+  start_year: 2020
+  start_month: 1
+  start_day: 1
+  use_session_filter: false
+  session_start: 9
+  session_end: 16
+
+# ============================================================================
+# 📰 News Filter
+# ============================================================================
+news:
+  enabled: true
+  buffer_before: 30   # minutes before event
+  buffer_after: 30    # minutes after event
+  events:
+    - enabled: true
+      name: "NFP"
+      month: 2
+      day: 7
+      hour: 13
+      minute: 30
+    - enabled: false
+      name: "FOMC Decision"
+      month: 3
+      day: 19
+      hour: 18
+      minute: 0
+
+# ============================================================================
+# Strategy
+# ============================================================================
+strategy:
+  trade_cooldown: 300  # seconds between signals
+  max_positions_per_symbol: 1
+
+# ============================================================================
+# Infrastructure
+# ============================================================================
+bybit:
+  ws_url: "wss://stream.bybit.com/v5/public/linear"
+  ping_interval: 20
+  reconnect_delay: 5
+
+logging:
+  level: "INFO"

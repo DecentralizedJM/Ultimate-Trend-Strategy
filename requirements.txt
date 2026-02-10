@@ -1,0 +1,10 @@
+# Core
+websockets>=12.0,<14.0
+pyyaml>=6.0
+python-dotenv>=1.0.0
+
+# Mudrex SDK
+mudrex @ git+https://github.com/DecentralizedJM/mudrex-api-trading-python-sdk.git
+
+# Testing
+pytest>=7.0
