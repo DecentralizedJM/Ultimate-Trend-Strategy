@@ -24,6 +24,7 @@ from src.trading.executor import TradeExecutor
 from src.trading.position_manager import PositionManager
 from src.trading.risk_manager import RiskManager
 from src.bybit_ws.client import BybitWebSocket, OHLCV
+from src.utils.telegram import TelegramAlerter
 
 
 def setup_logging(config: Config) -> None:
@@ -50,11 +51,12 @@ class UltimateTrendBot:
 
     Lifecycle:
     1. Load config → validate
-    2. Init engine, executor, position manager, risk manager
+    2. Init engine, executor, position manager, risk manager, telegram
     3. Connect Bybit WebSocket
-    4. On each confirmed candle: update → evaluate → execute
-    5. Background loop: manage open positions
-    6. Graceful shutdown on SIGINT/SIGTERM
+    4. On each confirmed candle: update → evaluate → execute → TG alert
+    5. Background loop: manage open positions → TG alerts
+    6. Daily summary loop → TG report every 24h
+    7. Graceful shutdown on SIGINT/SIGTERM → TG shutdown alert
     """
 
     def __init__(self, config: Config):
@@ -64,7 +66,18 @@ class UltimateTrendBot:
         self.engine = StrategyEngine(config)
         self.executor = TradeExecutor(config)
         self.risk_mgr = RiskManager(config)
-        self.pos_mgr = PositionManager(config, self.executor, self.engine)
+
+        # Telegram alerter
+        self.tg: Optional[TelegramAlerter] = None
+        if config.telegram.is_valid():
+            self.tg = TelegramAlerter(
+                bot_token=config.telegram.bot_token,
+                chat_ids=config.telegram.chat_ids,
+            )
+            logger.info(f"📱 Telegram alerts enabled → {len(config.telegram.chat_ids)} chat(s)")
+
+        # Position manager (with TG alerter)
+        self.pos_mgr = PositionManager(config, self.executor, self.engine, telegram=self.tg)
 
         # WebSocket
         self.ws: Optional[BybitWebSocket] = None
@@ -89,6 +102,17 @@ class UltimateTrendBot:
         loop = asyncio.get_event_loop()
         for sig in (signal.SIGINT, signal.SIGTERM):
             loop.add_signal_handler(sig, self._handle_shutdown)
+
+        # Send TG startup alert
+        if self.tg:
+            balance = self.executor.get_balance()
+            await self.tg.send_startup(
+                mode="DRY-RUN" if self.config.dry_run else "LIVE",
+                num_symbols=len(self.config.symbols),
+                margin_pct=self.config.risk.margin_percent,
+                leverage_range=f"{self.config.risk.min_leverage}x–{self.config.risk.max_leverage}x",
+                balance=balance,
+            )
 
         # Connect WebSocket
         try:
@@ -116,11 +140,12 @@ class UltimateTrendBot:
         # Set kline callback
         self.ws.on_kline = self._on_kline
 
-        # Run WS and position manager concurrently
+        # Run WS, position manager, status, and daily summary concurrently
         await asyncio.gather(
             self._ws_loop(),
             self._position_management_loop(),
             self._status_loop(),
+            self._daily_summary_loop(),
         )
 
     async def _ws_loop(self) -> None:
@@ -157,13 +182,12 @@ class UltimateTrendBot:
                 pass
 
     async def _status_loop(self) -> None:
-        """Periodic status logging."""
+        """Periodic status logging every 5 minutes."""
         while self._running:
             try:
                 await asyncio.wait_for(self._shutdown_event.wait(), timeout=300.0)
                 break
             except asyncio.TimeoutError:
-                # Log status every 5 minutes
                 stats = self.risk_mgr.get_stats()
                 positions = self.pos_mgr.active_symbols
                 logger.info(
@@ -183,6 +207,30 @@ class UltimateTrendBot:
                             f"ST: {'↑' if values.get('supertrend_dir') == 1 else '↓'} | "
                             f"Chop: {values.get('choppiness', 'N/A')}"
                         )
+
+    async def _daily_summary_loop(self) -> None:
+        """Send daily summary to Telegram every 24 hours."""
+        if not self.tg:
+            return
+
+        while self._running:
+            try:
+                # Wait 24 hours or until shutdown
+                await asyncio.wait_for(self._shutdown_event.wait(), timeout=86400.0)
+                break
+            except asyncio.TimeoutError:
+                # Send daily summary
+                try:
+                    balance = self.executor.get_balance()
+                    stats = self.risk_mgr.get_stats()
+                    await self.tg.send_daily_summary(
+                        balance=balance,
+                        active_positions=list(self.pos_mgr.active_symbols),
+                        risk_stats=stats,
+                    )
+                    logger.info("📋 Daily summary sent to Telegram")
+                except Exception as e:
+                    logger.error(f"Failed to send daily summary: {e}")
 
     def _on_kline(self, symbol: str, kline: OHLCV) -> None:
         """Callback for confirmed candle close."""
@@ -205,6 +253,17 @@ class UltimateTrendBot:
                     f"Reasons: {signal_result.reason}"
                 )
 
+                # TG signal alert
+                if self.tg:
+                    asyncio.ensure_future(self.tg.send_signal(
+                        symbol=symbol,
+                        side=signal_result.side,
+                        entry_price=signal_result.entry_price,
+                        stoploss_price=signal_result.stoploss_price,
+                        takeprofit_price=signal_result.takeprofit_price,
+                        reason=signal_result.reason,
+                    ))
+
                 # Check if we already have a position
                 if symbol not in self.pos_mgr.active_symbols:
                     # Get sizing multiplier
@@ -214,6 +273,23 @@ class UltimateTrendBot:
                     result = self.executor.execute(signal_result, sizing_multiplier=sizing)
 
                     if result.success:
+                        # TG trade opened alert
+                        if self.tg:
+                            asyncio.ensure_future(self.tg.send_trade_opened(
+                                symbol=result.symbol,
+                                side=result.side,
+                                quantity=result.quantity,
+                                leverage=result.leverage,
+                                margin_used=result.margin_used,
+                                position_value=result.position_value,
+                                entry_price=result.entry_price,
+                                stoploss_price=result.stoploss_price,
+                                takeprofit_price=result.takeprofit_price,
+                                order_id=result.order_id,
+                                tp1_price=signal_result.tp1_price,
+                                tp2_price=signal_result.tp2_price,
+                            ))
+
                         # Get ATR for position management
                         values = self.engine.get_indicator_values(symbol)
                         atr = values.get("atr", 0.0) or 0.0
@@ -229,6 +305,14 @@ class UltimateTrendBot:
                             tp2=signal_result.tp2_price,
                             atr=atr,
                         )
+                    else:
+                        # TG trade failed alert
+                        if self.tg:
+                            asyncio.ensure_future(self.tg.send_trade_failed(
+                                symbol=symbol,
+                                side=signal_result.side,
+                                error=result.error or "Unknown",
+                            ))
                 else:
                     logger.debug(f"Already positioned in {symbol}, skipping signal")
             else:
@@ -240,6 +324,12 @@ class UltimateTrendBot:
     async def _cleanup(self) -> None:
         """Graceful cleanup."""
         logger.info("🧹 Cleaning up...")
+
+        # Send TG shutdown alert
+        if self.tg:
+            stats = self.risk_mgr.get_stats()
+            await self.tg.send_shutdown(stats=stats)
+
         if self.ws:
             await self.ws.close()
         self.executor.close()

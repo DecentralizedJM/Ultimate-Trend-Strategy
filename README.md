@@ -50,6 +50,9 @@ MUDREX_API_SECRET=your_secret python -m src.main
 | `MIN_ORDER_VALUE` | Min position value, triggers auto-scale | `8.0` |
 | `STOPLOSS_ATR` | SL multiplier | `1.5` |
 | `TAKEPROFIT_ATR` | TP multiplier | `3.0` |
+| `TELEGRAM_BOT_TOKEN` | Telegram bot token for alerts | — |
+| `TELEGRAM_CHAT_ID` | Comma-separated chat IDs | — |
+| `TELEGRAM_ENABLED` | Enable/disable TG alerts | `true` |
 | `LOG_LEVEL` | Logging level | `INFO` |
 
 ## Testing

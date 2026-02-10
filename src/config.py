@@ -394,4 +394,5 @@ class Config:
         logger.info(f"Partial TP: {'ON' if self.profit.use_partial_profits else 'OFF'}")
         logger.info(f"Margin: {self.risk.margin_percent}% of wallet | Min order: ${self.risk.min_order_value}")
         logger.info(f"Leverage: {self.risk.min_leverage}-{self.risk.max_leverage}x (default: {self.risk.default_leverage}x, auto-scale if <${self.risk.min_order_value})")
+        logger.info(f"Telegram: {'ON → ' + str(len(self.telegram.chat_ids)) + ' chat(s)' if self.telegram.is_valid() else 'OFF'}")
         logger.info("=" * 60)

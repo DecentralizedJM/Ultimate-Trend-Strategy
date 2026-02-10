@@ -11,14 +11,18 @@ Manages open positions with:
 Runs as a background loop polling positions every ~10 seconds.
 """
 
+import asyncio
 import logging
 import time
-from typing import Dict, Optional
+from typing import Dict, Optional, TYPE_CHECKING
 from dataclasses import dataclass, field
 
 from src.config import Config
 from src.trading.executor import TradeExecutor
 from src.strategy.engine import StrategyEngine
+
+if TYPE_CHECKING:
+    from src.utils.telegram import TelegramAlerter
 
 logger = logging.getLogger(__name__)
 
@@ -56,11 +60,20 @@ class PositionManager:
     4. Reversal exits: close on counter-signal
     """
 
-    def __init__(self, config: Config, executor: TradeExecutor, engine: StrategyEngine):
+    def __init__(self, config: Config, executor: TradeExecutor, engine: StrategyEngine, telegram: Optional["TelegramAlerter"] = None):
         self.config = config
         self.executor = executor
         self.engine = engine
+        self.tg = telegram
         self._positions: Dict[str, ManagedPosition] = {}
+
+    def _tg_fire(self, coro) -> None:
+        """Fire-and-forget a TG alert coroutine."""
+        if self.tg:
+            try:
+                asyncio.ensure_future(coro)
+            except RuntimeError:
+                pass  # No event loop running (e.g. during tests)
 
     def register_position(
         self, symbol: str, side: str, entry_price: float,
@@ -152,12 +165,14 @@ class PositionManager:
         if pos.side == "LONG" and self.engine.should_exit_long(pos.symbol):
             logger.info(f"🔄 Reversal exit: closing LONG {pos.symbol}")
             self.executor.close_position(pos.symbol, pos.side)
+            self._tg_fire(self.tg.send_reversal_exit(pos.symbol, pos.side, "Bearish reversal")) if self.tg else None
             self.unregister_position(pos.symbol)
             return True
 
         if pos.side == "SHORT" and self.engine.should_exit_short(pos.symbol):
             logger.info(f"🔄 Reversal exit: closing SHORT {pos.symbol}")
             self.executor.close_position(pos.symbol, pos.side)
+            self._tg_fire(self.tg.send_reversal_exit(pos.symbol, pos.side, "Bullish reversal")) if self.tg else None
             self.unregister_position(pos.symbol)
             return True
 
@@ -175,6 +190,7 @@ class PositionManager:
             logger.info(f"🎯 TP1 hit: closing 50% of {pos.side} {pos.symbol} @ {pos.current_price:.4f}")
             if self.executor.close_partial(pos.symbol, pos.side, 0.5):
                 pos.tp1_triggered = True
+                self._tg_fire(self.tg.send_partial_tp(pos.symbol, pos.side, 1, 0.5, pos.current_price)) if self.tg else None
 
     def _check_partial_tp2(self, pos: ManagedPosition) -> None:
         """Close 25% at TP2."""
@@ -188,6 +204,7 @@ class PositionManager:
             logger.info(f"🎯 TP2 hit: closing 25% of {pos.side} {pos.symbol} @ {pos.current_price:.4f}")
             if self.executor.close_partial(pos.symbol, pos.side, 0.5):  # 50% of remaining = 25% of original
                 pos.tp2_triggered = True
+                self._tg_fire(self.tg.send_partial_tp(pos.symbol, pos.side, 2, 0.25, pos.current_price)) if self.tg else None
 
     def _check_breakeven(self, pos: ManagedPosition, atr: float) -> None:
         """Move SL to entry + small buffer when profit reaches trigger."""
@@ -202,6 +219,7 @@ class PositionManager:
                     if self.executor.set_stoploss(pos.symbol, new_sl):
                         pos.stoploss = new_sl
                         pos.breakeven_triggered = True
+                        self._tg_fire(self.tg.send_breakeven_activated(pos.symbol, pos.side, pos.entry_price)) if self.tg else None
 
         elif pos.side == "SHORT":
             if pos.current_price <= pos.entry_price - (atr * trigger):
@@ -211,6 +229,7 @@ class PositionManager:
                     if self.executor.set_stoploss(pos.symbol, new_sl):
                         pos.stoploss = new_sl
                         pos.breakeven_triggered = True
+                        self._tg_fire(self.tg.send_breakeven_activated(pos.symbol, pos.side, pos.entry_price)) if self.tg else None
 
     def _check_trailing_stop(self, pos: ManagedPosition, atr: float) -> None:
         """Trail stop-loss behind price using ATR multiplier."""
@@ -221,11 +240,18 @@ class PositionManager:
             if new_sl > pos.stoploss:
                 logger.debug(f"📈 Trail SL: {pos.symbol} {pos.stoploss:.4f} → {new_sl:.4f}")
                 if self.executor.set_stoploss(pos.symbol, new_sl):
+                    old_sl = pos.stoploss
                     pos.stoploss = new_sl
+                    # Only alert on significant moves (> 0.5 ATR from last alert)
+                    if atr > 0 and (new_sl - old_sl) > atr * 0.5:
+                        self._tg_fire(self.tg.send_trailing_stop_update(pos.symbol, pos.side, new_sl, pos.current_price)) if self.tg else None
 
         elif pos.side == "SHORT":
             new_sl = pos.lowest_price + trail_dist
             if new_sl < pos.stoploss:
                 logger.debug(f"📉 Trail SL: {pos.symbol} {pos.stoploss:.4f} → {new_sl:.4f}")
                 if self.executor.set_stoploss(pos.symbol, new_sl):
+                    old_sl = pos.stoploss
                     pos.stoploss = new_sl
+                    if atr > 0 and (old_sl - new_sl) > atr * 0.5:
+                        self._tg_fire(self.tg.send_trailing_stop_update(pos.symbol, pos.side, new_sl, pos.current_price)) if self.tg else None
