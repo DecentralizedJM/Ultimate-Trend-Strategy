@@ -134,17 +134,19 @@ class TradeExecutor:
         # Calculate margin amount (% of balance) * sizing multiplier
         margin_amount = balance * (risk_cfg.margin_percent / 100) * sizing_multiplier
 
-        # Start with default leverage
-        leverage = risk_cfg.default_leverage
+        # Start with default leverage, clamped to configured range
+        leverage = max(risk_cfg.min_leverage, risk_cfg.default_leverage)
 
-        # Calculate position value
+        # Calculate position value = margin × leverage
         position_value = margin_amount * leverage
 
-        # Check if we meet minimum order value
+        # Auto-scale leverage UP if position value doesn't meet min order ($8)
         min_order = risk_cfg.min_order_value
 
         if position_value < min_order:
             required_leverage = math.ceil(min_order / margin_amount)
+            # Clamp to [min_leverage, max_leverage]
+            required_leverage = max(risk_cfg.min_leverage, required_leverage)
 
             if required_leverage <= risk_cfg.max_leverage:
                 leverage = required_leverage

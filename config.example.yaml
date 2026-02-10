@@ -2,10 +2,59 @@
 # =======================================
 # Copy to config.yaml and edit values as needed.
 # All values can also be overridden via environment variables.
+# Override symbols via SYMBOLS env var: SYMBOLS=BTCUSDT,ETHUSDT
 
 symbols:
   - BTCUSDT
   - ETHUSDT
+  - SOLUSDT
+  - XRPUSDT
+  - DOGEUSDT
+  - ADAUSDT
+  - AVAXUSDT
+  - DOTUSDT
+  - LINKUSDT
+  - MATICUSDT
+  - SHIBUSDT
+  - LTCUSDT
+  - BCHUSDT
+  - NEARUSDT
+  - UNIUSDT
+  - APTUSDT
+  - ICPUSDT
+  - FILUSDT
+  - ARBUSDT
+  - OPUSDT
+  - ATOMUSDT
+  - IMXUSDT
+  - GRTUSDT
+  - INJUSDT
+  - FTMUSDT
+  - SUIUSDT
+  - SEIUSDT
+  - TIAUSDT
+  - PEPEUSDT
+  - WIFUSDT
+  - FETUSDT
+  - RNDRUSDT
+  - AAVEUSDT
+  - MKRUSDT
+  - SNXUSDT
+  - CRVUSDT
+  - LDOUSDT
+  - APEUSDT
+  - SANDUSDT
+  - MANAUSDT
+  - DYDXUSDT
+  - STXUSDT
+  - CFXUSDT
+  - AGIXUSDT
+  - RUNEUSDT
+  - GMXUSDT
+  - PENDLEUSDT
+  - ORDIUSDT
+  - WLDUSDT
+  - JUPUSDT
 
 timeframe: 5  # minutes
 
@@ -114,11 +163,11 @@ risk:
   trailing_stop_atr: 1.2
   use_breakeven: true
   breakeven_trigger_atr: 1.5
-  margin_percent: 5.0
-  min_leverage: 1
-  max_leverage: 20
+  margin_percent: 2.0       # 2% of futures wallet per trade
+  min_leverage: 5
+  max_leverage: 25
   default_leverage: 5
-  min_order_value: 8.0
+  min_order_value: 8.0      # auto-scales leverage up if not met
 
 # ============================================================================
 # 💰 Partial Profit Taking

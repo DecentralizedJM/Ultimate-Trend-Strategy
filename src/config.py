@@ -133,11 +133,11 @@ class RiskConfig:
     use_breakeven: bool = True
     breakeven_trigger_atr: float = 1.5
     # Margin / leverage
-    margin_percent: float = 5.0
-    min_leverage: int = 1
-    max_leverage: int = 20
+    margin_percent: float = 2.0   # 2% of futures wallet per trade
+    min_leverage: int = 5
+    max_leverage: int = 25
     default_leverage: int = 5
-    min_order_value: float = 8.0
+    min_order_value: float = 8.0  # auto-scale leverage if not met
 
 
 @dataclass
@@ -243,7 +243,18 @@ class Config:
     mudrex_api_secret: str = ""
 
     # Trading
-    symbols: List[str] = field(default_factory=lambda: ["BTCUSDT"])
+    symbols: List[str] = field(default_factory=lambda: [
+        "BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "DOGEUSDT",
+        "ADAUSDT", "AVAXUSDT", "DOTUSDT", "LINKUSDT", "MATICUSDT",
+        "SHIBUSDT", "LTCUSDT", "BCHUSDT", "NEARUSDT", "UNIUSDT",
+        "APTUSDT", "ICPUSDT", "FILUSDT", "ARBUSDT", "OPUSDT",
+        "ATOMUSDT", "IMXUSDT", "GRTUSDT", "INJUSDT", "FTMUSDT",
+        "SUIUSDT", "SEIUSDT", "TIAUSDT", "PEPEUSDT", "WIFUSDT",
+        "FETUSDT", "RNDRUSDT", "AAVEUSDT", "MKRUSDT", "SNXUSDT",
+        "CRVUSDT", "LDOUSDT", "APEUSDT", "SANDUSDT", "MANAUSDT",
+        "DYDXUSDT", "STXUSDT", "CFXUSDT", "AGIXUSDT", "RUNEUSDT",
+        "GMXUSDT", "PENDLEUSDT", "ORDIUSDT", "WLDUSDT", "JUPUSDT",
+    ])
     timeframe: int = 5
 
     # Indicator configs
@@ -390,5 +401,6 @@ class Config:
         logger.info(f"SL: {self.risk.stoploss_atr}x ATR | TP: {self.risk.takeprofit_atr}x ATR")
         logger.info(f"Trailing: {'ON' if self.risk.use_trailing_stop else 'OFF'} | Breakeven: {'ON' if self.risk.use_breakeven else 'OFF'}")
         logger.info(f"Partial TP: {'ON' if self.profit.use_partial_profits else 'OFF'}")
-        logger.info(f"Leverage: {self.risk.min_leverage}-{self.risk.max_leverage}x (default: {self.risk.default_leverage}x)")
+        logger.info(f"Margin: {self.risk.margin_percent}% of wallet | Min order: ${self.risk.min_order_value}")
+        logger.info(f"Leverage: {self.risk.min_leverage}-{self.risk.max_leverage}x (default: {self.risk.default_leverage}x, auto-scale if <${self.risk.min_order_value})")
         logger.info("=" * 60)
