@@ -242,6 +242,14 @@ class StrategyEngine:
         elif short_trigger:
             return self._create_signal(symbol, SignalType.SHORT, state, status)
         else:
+            # Periodic debug: log setup state for select symbols
+            if long_setup or short_setup:
+                logger.info(
+                    f"⏳ {symbol} setup passed (L:{long_setup} S:{short_setup}) "
+                    f"but no trigger fired | EMA_xo:{status.ema_bullish_crossover}/{status.ema_bearish_crossover} "
+                    f"engulf:{status.bullish_engulfing}/{status.bearish_engulfing} "
+                    f"vol_spike:{status.volume_spike}"
+                )
             return self._neutral_signal(symbol, f"No trigger (L:{long_setup} S:{short_setup})")
 
     # ========================================================================
@@ -420,7 +428,7 @@ class StrategyEngine:
 
     def _check_long_trigger(self, s: IndicatorStatus, state: SymbolState) -> bool:
         """
-        PineScript longTrigger: setup AND volumeOK AND one of:
+        PineScript longTrigger: setup AND one of:
         - EMA crossover
         - Bullish engulfing
         - Hammer near support
@@ -429,9 +437,6 @@ class StrategyEngine:
         - Volume spike
         """
         cfg = self.config
-
-        if cfg.volume.enabled and not s.volume_above_avg:
-            return False
 
         return (
             s.ema_bullish_crossover or
@@ -444,7 +449,7 @@ class StrategyEngine:
 
     def _check_short_trigger(self, s: IndicatorStatus, state: SymbolState) -> bool:
         """
-        PineScript shortTrigger: setup AND volumeOK AND one of:
+        PineScript shortTrigger: setup AND one of:
         - EMA crossunder
         - Bearish engulfing
         - Shooting star near resistance
@@ -453,9 +458,6 @@ class StrategyEngine:
         - Volume spike
         """
         cfg = self.config
-
-        if cfg.volume.enabled and not s.volume_above_avg:
-            return False
 
         return (
             s.ema_bearish_crossover or

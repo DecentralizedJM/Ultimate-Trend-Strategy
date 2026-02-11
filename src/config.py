@@ -32,8 +32,8 @@ class TrendConfig:
     ema_filter: int = 50
     ema_200: int = 200
     adx_period: int = 14
-    adx_threshold: int = 25
-    use_ema200_filter: bool = True
+    adx_threshold: int = 20
+    use_ema200_filter: bool = False
 
 
 @dataclass
@@ -47,7 +47,7 @@ class SupertrendConfig:
 @dataclass
 class BollingerConfig:
     """📊 Bollinger Bands"""
-    enabled: bool = True
+    enabled: bool = False
     period: int = 20
     std_dev: float = 2.0
     min_width_pct: float = 2.0
@@ -56,7 +56,7 @@ class BollingerConfig:
 @dataclass
 class MTFConfig:
     """🔄 Multi-Timeframe"""
-    enabled: bool = True
+    enabled: bool = False
     higher_timeframe: str = "60"
     confirmation_type: str = "EMA"  # "EMA" or "Trend"
 
@@ -64,7 +64,7 @@ class MTFConfig:
 @dataclass
 class RSIConfig:
     """💪 RSI"""
-    enabled: bool = True
+    enabled: bool = False
     period: int = 14
     overbought: int = 70
     oversold: int = 30
@@ -75,7 +75,7 @@ class RSIConfig:
 @dataclass
 class MACDConfig:
     """📉 MACD"""
-    enabled: bool = True
+    enabled: bool = False
     fast_period: int = 12
     slow_period: int = 26
     signal_period: int = 9
@@ -84,7 +84,7 @@ class MACDConfig:
 @dataclass
 class VolumeConfig:
     """📦 Volume"""
-    enabled: bool = True
+    enabled: bool = False
     period: int = 20
     multiplier: float = 1.2
     detect_spike: bool = True
@@ -96,8 +96,8 @@ class MarketConditionsConfig:
     """🌊 Market Conditions"""
     use_choppiness: bool = True
     chop_period: int = 14
-    chop_threshold: float = 61.8
-    use_sideways: bool = True
+    chop_threshold: float = 70.0
+    use_sideways: bool = False
     sideways_period: int = 20
     sideways_threshold: float = 1.5
 
@@ -105,7 +105,7 @@ class MarketConditionsConfig:
 @dataclass
 class VolatilityConfig:
     """💨 Volatility"""
-    enabled: bool = True
+    enabled: bool = False
     min_pct: float = 0.5
     max_pct: float = 5.0
 
@@ -113,7 +113,7 @@ class VolatilityConfig:
 @dataclass
 class SRConfig:
     """🎯 Support/Resistance"""
-    enabled: bool = True
+    enabled: bool = False
     lookback: int = 50
     tolerance_pct: float = 0.5
 
@@ -200,7 +200,7 @@ class NewsConfig:
 @dataclass
 class StrategyConfig:
     """Strategy settings"""
-    trade_cooldown: int = 300  # seconds between signals
+    trade_cooldown: int = 60  # seconds between signals
     max_positions_per_symbol: int = 1
 
 
